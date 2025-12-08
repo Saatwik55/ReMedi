@@ -4,9 +4,10 @@ from flask_cors import CORS
 app = Flask(__name__)
 CORS(app)
 
-from routes import auth, chatbot_routes
+from routes import auth, chatbot_routes, prescription
 app.register_blueprint(auth.auth_bp, url_prefix='/api')
 app.register_blueprint(chatbot_routes.chatbot_bp, url_prefix='/chatbot')
+app.register_blueprint(prescription.upload_bp, url_prefix='/upload')
 @app.route('/')
 def health_check():
     return {"status": "Server is running", "message": "Welcome to the API"}, 200
