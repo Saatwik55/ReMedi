@@ -69,7 +69,7 @@ def hybrid_symptom_match(user_input: str, top_k: int = 5) -> List[str]:
     return combined
 
 # ---------------- Next Best Symptom ----------------
-def find_next_best_symptom(symptom_weights: Dict[str, int], asked_symptoms: List[str], threshold=0.001) -> Optional[str]:
+def find_next_best_symptom(symptom_weights: Dict[str, int], asked_symptoms: List[str], threshold=0.01) -> Optional[str]:
     confirmed_symptoms = [s for s, present in symptom_weights.items() if present == 1]
     if not confirmed_symptoms:
         print("No confirmed symptoms yet.")
@@ -89,8 +89,8 @@ def find_next_best_symptom(symptom_weights: Dict[str, int], asked_symptoms: List
 
     next_symptom, next_score = max(scores.items(), key=lambda x: x[1])
     print(f"Next candidate: {next_symptom}, Score: {next_score:.4f}")
-    if next_score < threshold:
-        print("Score below threshold, stopping.")
+    if next_score < threshold or len(asked_symptoms) > 10:
+        print("Score below threshold or too many questions asked, stopping.")
         return None
 
     return next_symptom

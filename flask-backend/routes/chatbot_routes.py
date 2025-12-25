@@ -44,16 +44,22 @@ def extract_initial_symptoms(email):
 def extract_next_symptom(email):
     try:
         data = request.get_json()
-        symptom_weights: Dict[str, int] = data.get("symptom_weights", {})
-        asked_symptoms: List[str] = data.get("asked_symptoms", [])
+        symptom_state: Dict[str, int] = data.get("symptom_state", {})
 
-        if not symptom_weights:
-            return jsonify({"message": "No symptoms were confirmed."}), 400
+        if not symptom_state:
+            return jsonify({
+                "message": "No symptom information received."
+            }), 400
 
-        next_symptom = s.find_next_best_symptom(symptom_weights, asked_symptoms)
-
+        symptom_weights = {s: v for s, v in symptom_state.items() if v == 1}
+        asked_symptoms = list(symptom_state.keys())
+        next_symptom = s.find_next_best_symptom(
+            symptom_weights=symptom_weights,
+            asked_symptoms=asked_symptoms
+        )
+        # Termination case → predict disease
         if not next_symptom:
-            confirmed_symptoms = [sym for sym, val in symptom_weights.items() if val == 1]
+            confirmed_symptoms = list(symptom_weights.keys())
             all_symptoms = s.rf_model.feature_names_in_
             vector = [1 if sym in confirmed_symptoms else 0 for sym in all_symptoms]
             predicted_disease = s.rf_model.predict([vector])[0]
@@ -64,14 +70,19 @@ def extract_next_symptom(email):
                 "predicted_disease": predicted_disease
             })
 
+        # Continue questioning
         return jsonify({
             "next_symptom": next_symptom,
             "suggestion_score": 1.0,
-            "message": f"Do you experience '{next_symptom.replace('_', ' ')}'? Confirm if yes.",
-            "description": s.symptom_descriptions.get(next_symptom, "No description available.")
+            "message": f"Do you experience '{next_symptom.replace('_', ' ')}'?",
+            "description": s.symptom_descriptions.get(
+                next_symptom, "No description available."
+            )
         })
 
     except Exception as e:
         import traceback
         traceback.print_exc()
-        return jsonify({"error": f"{type(e).__name__}: {str(e)}"}), 500
+        return jsonify({
+            "error": f"{type(e).__name__}: {str(e)}"
+        }), 500
